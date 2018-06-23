@@ -5,13 +5,16 @@ import selenium.webdriver as webdriver
 url = "https://www.startpage.com/"
 browser = webdriver.PhantomJS()
 
+#these 3 lines are to load everything before the first q to make it run faster
 key = ""
 while key != 'q':
+	key = input('')
+
 	#take screenshot
 	pic = pyautogui.screenshot()
 
 	#save screenshot
-	#pic.save('screenshot.png')
+	pic.save('screenshot.png')
 
 	#break into multiple images
 	image = Image.open('screenshot.png')
@@ -90,7 +93,5 @@ while key != 'q':
 	print("B - " + str(bProb) + "% with " + str(bTotal))
 	print("C - " + str(cProb) + "% with " + str(cTotal))
 	print("########################################")
-
-	key = input('')
 
 browser.close()
