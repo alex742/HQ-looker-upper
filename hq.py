@@ -1,12 +1,35 @@
+#Screenshots
 import pyautogui
 from PIL import Image
 import selenium.webdriver as webdriver
+
+#Computer Vision
+import io
+import os
+from google.cloud import vision
+from google.cloud.vision import types
+# Instantiates a client
+client = vision.ImageAnnotatorClient()
+# The name of the image files to annotate
+question_image_file = os.path.join(
+    os.path.dirname(__file__),
+    'question.png')
+answer1_image_file = os.path.join(
+    os.path.dirname(__file__),
+    'answer1.png')
+answer2_image_file = os.path.join(
+    os.path.dirname(__file__),
+    'answer2.png')
+answer3_image_file = os.path.join(
+    os.path.dirname(__file__),
+    'answer3.png')
 
 url = "https://www.startpage.com/"
 browser = webdriver.PhantomJS()
 
 #these 3 lines are to load everything before the first q to make it run faster
 key = ""
+print('Ready')
 while key != 'q':
 	key = input('')
 
@@ -19,11 +42,11 @@ while key != 'q':
 	#break into multiple images
 	image = Image.open('screenshot.png')
 
-	width = 500
-	qHeight = 230
-	aHeight = 90
-	xOrigin = 1200
-	yOrigin = 270
+	width = 350
+	qHeight = 150
+	aHeight = 70
+	xOrigin = 1010
+	yOrigin = 150
 
 	box = (xOrigin, yOrigin, xOrigin + width, yOrigin + qHeight)
 	crop = image.crop(box)
@@ -41,11 +64,42 @@ while key != 'q':
 	crop = image.crop(box)
 	crop.save('answer3.png')
 
+	# Loads the image into memory
+	with io.open(question_image_file, 'rb') as question_image:
+		question_content = question_image.read()
+	with io.open(answer1_image_file, 'rb') as answer1_image:
+		answer1_content = answer1_image.read()
+	with io.open(answer2_image_file, 'rb') as answer2_image:
+		answer2_content = answer2_image.read()
+	with io.open(answer3_image_file, 'rb') as answer3_image:
+		answer3_content = answer3_image.read()
+
+	q_image = types.Image(content=question_content)
+	a1_image = types.Image(content=answer1_content)
+	a2_image = types.Image(content=answer2_content)
+	a3_image = types.Image(content=answer3_content)
+
+	# Performs label detection on the image file
+	question_response = client.text_detection(image=q_image)
+	question_texts = question_response.text_annotations
+	answer1_response = client.text_detection(image=a1_image)
+	answer1_texts = answer1_response.text_annotations
+	answer2_response = client.text_detection(image=a2_image)
+	answer2_texts = answer2_response.text_annotations
+	answer3_response = client.text_detection(image=a3_image)
+	answer3_texts = answer3_response.text_annotations
+
+	print('\n"{}"'.format(question_texts[0].description))
+	print('\n"{}"'.format(answer1_texts[0].description))
+	print('\n"{}"'.format(answer2_texts[0].description))
+	print('\n"{}"'.format(answer3_texts[0].description))
+
+
 	#convert to text
-	qText = ""
-	a1Text = ""
-	a2Text = ""
-	a3Text = ""
+	qText = question_texts[0].description
+	a1Text = answer1_texts[0].description
+	a2Text = answer2_texts[0].description
+	a3Text = answer3_texts[0].description
 
 	#search question
 	browser.get(url)
