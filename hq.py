@@ -8,6 +8,7 @@ import io
 import os
 from google.cloud import vision
 from google.cloud.vision import types
+
 # Instantiates a client
 client = vision.ImageAnnotatorClient()
 # The name of the image files to annotate
@@ -24,6 +25,9 @@ answer3_image_file = os.path.join(
     os.path.dirname(__file__),
     'answer3.png')
 
+#Timing the program
+import time
+
 url = "https://www.startpage.com/"
 browser = webdriver.PhantomJS()
 
@@ -32,6 +36,7 @@ key = ""
 print('Ready')
 while key != 'q':
 	key = input('')
+	start_time = time.time()
 
 	#take screenshot
 	pic = pyautogui.screenshot()
@@ -42,7 +47,7 @@ while key != 'q':
 	#break into multiple images
 	image = Image.open('screenshot.png')
 
-	width = 350
+	width = 400
 	qHeight = 150
 	aHeight = 70
 	xOrigin = 1010
@@ -89,32 +94,28 @@ while key != 'q':
 	answer3_response = client.text_detection(image=a3_image)
 	answer3_texts = answer3_response.text_annotations
 
-	print('\n"{}"'.format(question_texts[0].description))
-	print('\n"{}"'.format(answer1_texts[0].description))
-	print('\n"{}"'.format(answer2_texts[0].description))
-	print('\n"{}"'.format(answer3_texts[0].description))
-
-
 	#convert to text
 	qText = question_texts[0].description
 	a1Text = answer1_texts[0].description
 	a2Text = answer2_texts[0].description
 	a3Text = answer3_texts[0].description
+	qText = qText.replace('\n', ' ')
+	#print(qText)
 
 	#search question
 	browser.get(url)
 	searchBox = browser.find_element_by_id("query")
 	searchBox.send_keys(qText)
 	searchBox.submit()
-	try:
-		links = browser.find_elements_by_xpath("//ol[@class='web_regular_results']//h3//a")
-	except:
-		links = browser.find_elements_by_xpath("//h3///a")
-	results = []
-	for link in links:
-		href = link.get_attribute("href")
-		print(href)
-		results.append(href)
+	
+	links = []
+	for i in range(1,11):
+		try:
+			links.append(browser.find_element_by_xpath("//*[@id='result" + str(i) + "']/div/p[2]/span[1]").text + browser.find_element_by_xpath("//*[@id='result" + str(i) + "']/div/p[2]/span/span").text)
+		except:
+			i = 100
+			break
+	
 
 	#count answers
 	aTotal = 0
@@ -122,10 +123,13 @@ while key != 'q':
 	cTotal = 0
 	total = 0
 
-	for result in results:
-		aTotal += result.count(a1Text)
-		bTotal += result.count(a2Text)
-		cTotal += result.count(a3Text)
+	for link in links:
+		link = link.replace("\n"," ")
+		link = link.lower()
+		print(link)
+		aTotal += link.count(a1Text.lower().replace("\n",""))
+		bTotal += link.count(a2Text.lower().replace("\n",""))
+		cTotal += link.count(a3Text.lower().replace("\n",""))
 
 	total = aTotal + bTotal + cTotal
 
@@ -147,5 +151,10 @@ while key != 'q':
 	print("B - " + str(bProb) + "% with " + str(bTotal))
 	print("C - " + str(cProb) + "% with " + str(cTotal))
 	print("########################################")
+	print("--- %s seconds ---" % (time.time() - start_time))
+	#print(a1Text.lower().replace("\n"," "))
+	#print(links)
+	#print(a2Text.lower().replace("\n"," "))
+	#print(a3Text.lower().replace("\n"," "))
 
 browser.close()
